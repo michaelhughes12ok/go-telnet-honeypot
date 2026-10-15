@@ -35,4 +35,4 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0 
           
 
-      - name: Deploy to AWS
+    # - name: Deploy to AWS
