@@ -1,11 +1,12 @@
-FROM golang:1.27 AS builder
+FROM golang:1.26.9 AS builder
 WORKDIR /app
+COPY go.mod ./
+
 COPY . .
-RUN go build -o honeypot .
 
+RUN CGO_ENABLED=0 GOOS=linux go build -o honeypot . 
 
-FROM debian:bookworm-slim
-WORKDIR /app
-COPY --from=builder /app/honeypot .
-EXPOSE 23
-CMD ["./honeypot"]
+FROM gcr.io/distroless/static:nonroot
+COPY --from=builder /app/honeypot /honeypot
+EXPOSE 2323
+ENTRYPOINT ["/honeypot"]

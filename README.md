@@ -5,10 +5,10 @@
 ## HOW-TO
 1. Build the image:
 
-    ​```docker build -t telnet-honeypot .​```
+    ​```docker build -t honeypot .​```
 1. Run it:
 
-    ​```docker run -it -p 23:23 telnet-honeypot​```
+    ​```docker run --rm -p 23:2323 honeypot​```
 1. Connect (choose "all interfaces" when prompted):
 
     ```nc [local_ip] 23```
