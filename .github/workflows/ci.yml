@@ -32,9 +32,7 @@ jobs:
         run: go test -fuzz
 
       - name: Trivy
-        uses: aquasecurity/trivy-action@v0.36.0
-        with: 
+        uses: aquasecurity/trivy-action@v0.36.0 
           
 
       - name: Deploy to AWS
-        run: 
