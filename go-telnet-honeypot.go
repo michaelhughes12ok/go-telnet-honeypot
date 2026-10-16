@@ -6,10 +6,21 @@ import (
 	"net"
 	"os"
 	"time"
+	"encoding/json"
 )
 
+type Attempt struct {
+Time string `json:"time"`
+SourceAddr string `json:"source_address"`
+AttemptedInput string `json:"attempted_input"`
+}
+
 func main() {
-	file, err := os.OpenFile("log.txt", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	jsonData, err := json.Marshal(Attempt)
+	if err != nil {
+		
+	}
+	file, err := os.OpenFile()
 	if err != nil {
 		log.Fatal("File already exists or cannot be created: ", err)
 	}
@@ -22,15 +33,7 @@ func main() {
 		}
 	}()
 	serverPort := 23
-	fmt.Print("DANGER!!! PLEASE MAKE SURE THIS APPLICATION IS CONTAINERIZED AND RUN AS ROOT/SUDO IN SAID CONTAINER, thank you :).\n")
-	fmt.Print("Expose to (1) localhost only (2) all interfaces: ")
-	var choice string
-	fmt.Scanln(&choice)
-
-	serverIp := "127.0.0.1"
-	if choice == "2" {
-		serverIp = "0.0.0.0"
-	}
+	serverIp := "0.0.0.0"
 
 	addr := fmt.Sprintf("%s:%v", serverIp, serverPort)
 	listener, err := net.Listen("tcp", addr)
@@ -38,8 +41,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer listener.Close()
-
-	fmt.Printf("Server running on %s...\r", addr)
 
 	for {
 		conn, err := listener.Accept()
@@ -53,22 +54,20 @@ func main() {
 
 func handleConnection(conn net.Conn, logChannel chan string) {
 	defer conn.Close()
-	conn.Write([]byte("BusyBox v1.19.4\r\nlogin: "))
+	conn.Write([]byte("\r\nPassword: "))
 	buffer := make([]byte, 1024)
 	for {
 		nInt, err := conn.Read(buffer)
 		if err != nil {
 			return
 		}
-		attempt := string(buffer[:nInt])
 
+		attemptedInput := string(buffer[:nInt])
 		layout := "2006-01-02 15:04:05"
 		result := time.Now().Format(layout)
 		sourceAddr := conn.RemoteAddr().String()
+		logChannel <- Attempt
 
-		var attackLog string = fmt.Sprintf("%s - Source:%s, Attempt:%s", result, sourceAddr, attempt)
-		logChannel <- attackLog
-
-		conn.Write([]byte("\r\nLogin incorrect\r\nlogin: "))
+		conn.Write([]byte("\r\nPassword incorrect\r\nPassword: "))
 	}
 }
