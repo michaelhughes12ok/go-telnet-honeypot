@@ -18,5 +18,5 @@ Note: This is to reach it from your home network to really deploy this you need 
 * Username field.
 * Rate limiting IP's.
 * Password try limit.
-* Json logs.
+* ~~Json logs.~~
 * Database and log analysis containers.
