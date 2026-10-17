@@ -1,38 +1,35 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"time"
-	"encoding/json"
 )
 
 type Attempt struct {
-Time string `json:"time"`
-SourceAddr string `json:"source_address"`
-AttemptedInput string `json:"attempted_input"`
+	Time           string `json:"time"`
+	SourceAddr     string `json:"source_address"`
+	AttemptedInput string `json:"attempted_input"`
 }
 
 func main() {
-	jsonData, err := json.Marshal(Attempt)
+	logChannel := make(chan []byte, 100)
+	file, err := os.OpenFile("attempts.jsonl", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0600)
 	if err != nil {
-		
+		log.Fatal(err)
 	}
-	file, err := os.OpenFile()
-	if err != nil {
-		log.Fatal("File already exists or cannot be created: ", err)
-	}
-
-	logChannel := make(chan string, 100)
+	defer file.Close()
 
 	go func() {
 		for msg := range logChannel {
-			file.WriteString(msg)
+			file.Write(msg)
 		}
 	}()
-	serverPort := 23
+
+	serverPort := 2323
 	serverIp := "0.0.0.0"
 
 	addr := fmt.Sprintf("%s:%v", serverIp, serverPort)
@@ -52,7 +49,7 @@ func main() {
 	}
 }
 
-func handleConnection(conn net.Conn, logChannel chan string) {
+func handleConnection(conn net.Conn, logChannel chan []byte) {
 	defer conn.Close()
 	conn.Write([]byte("\r\nPassword: "))
 	buffer := make([]byte, 1024)
@@ -63,10 +60,19 @@ func handleConnection(conn net.Conn, logChannel chan string) {
 		}
 
 		attemptedInput := string(buffer[:nInt])
-		layout := "2006-01-02 15:04:05"
-		result := time.Now().Format(layout)
+		result := time.Now().Format("2006-01-02 15:04:05")
 		sourceAddr := conn.RemoteAddr().String()
-		logChannel <- Attempt
+
+		attackLog := Attempt{Time: result, SourceAddr: sourceAddr, AttemptedInput: attemptedInput}
+
+		jsonData, err := json.Marshal(attackLog)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		jsonData = append(jsonData, '\n')
+		logChannel <- jsonData
 
 		conn.Write([]byte("\r\nPassword incorrect\r\nPassword: "))
 	}
