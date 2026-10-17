@@ -21,11 +21,18 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	
+	defer func() {
+		if err := file.Close(); err != nil {
+        		log.Fatal(err)
+    		}
+	}()
 
 	go func() {
 		for msg := range logChannel {
-			file.Write(msg)
+			if _, err := file.Write(msg); err != nil {
+				log.Println(err)
+			}
 		}
 	}()
 
@@ -37,7 +44,11 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer listener.Close()
+	defer func(){
+		if err := listener.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	for {
 		conn, err := listener.Accept()
@@ -50,8 +61,15 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, logChannel chan []byte) {
-	defer conn.Close()
-	conn.Write([]byte("\r\nPassword: "))
+	defer func(){
+		if err := conn.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+	if _, err := conn.Write([]byte("\r\nPassword: ")); err != nil {
+		log.Println(err)
+		return
+	}
 	buffer := make([]byte, 1024)
 	for {
 		nInt, err := conn.Read(buffer)
@@ -60,7 +78,7 @@ func handleConnection(conn net.Conn, logChannel chan []byte) {
 		}
 
 		attemptedInput := string(buffer[:nInt])
-		result := time.Now().Format("2006-01-02 15:04:05")
+		result := time.Now().Format(time.RFC3339)
 		sourceAddr := conn.RemoteAddr().String()
 
 		attackLog := Attempt{Time: result, SourceAddr: sourceAddr, AttemptedInput: attemptedInput}
@@ -74,6 +92,9 @@ func handleConnection(conn net.Conn, logChannel chan []byte) {
 		jsonData = append(jsonData, '\n')
 		logChannel <- jsonData
 
-		conn.Write([]byte("\r\nPassword incorrect\r\nPassword: "))
+		if _, err := conn.Write([]byte("\r\nPassword incorrect\r\nPassword: ")); err != nil{
+			log.Println(err)
+		return
+		}
 	}
 }
