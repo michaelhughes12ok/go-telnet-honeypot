@@ -124,7 +124,7 @@ func handleConnection(conn net.Conn, logChannel chan []byte) {
 			return
 		}
 	}
-	if _, err := conn.Write([]byte("\r\nMaximum number of tries exceeded (3)\r\n")); err != nil {
+	if _, err := conn.Write([]byte(fmt.Sprintf("\r\nMaximum number of tries exceeded (%v)\r\n", attempts))); err != nil {
     	    log.Println(err)
 	}
 	return
