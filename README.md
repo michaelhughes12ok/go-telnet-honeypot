@@ -1,5 +1,5 @@
 # Go "telnet" Honeypot
-* A lightweight TCP honeypot that mimics a BusyBox telnet login and logs connection attempts.
+* A lightweight TCP honeypot that mimics a CentOS 5.9 server telnet login and logs connection attempts.
 * I say "telnet" because currently it only handles raw tcp and theres no IAC negotiation.
 * Make sure you only run this in a container with the Dockerfile I provided.
 ## HOW-TO
@@ -15,8 +15,8 @@
 Note: This is to reach it from your home network to really deploy this you need to port forward the host machine to the internet.
 ## TO-DO
 * IAC Negotiation, right now if you try to connect via a telnet client it'll immediately throw an incorrect login on any input.
-* Username field.
+* ~~Username field.~~
 * Rate limiting IP's.
-* Password try limit.
+* ~~Password try limit.~~
 * ~~Json logs.~~
 * Database and log analysis containers. (otw)

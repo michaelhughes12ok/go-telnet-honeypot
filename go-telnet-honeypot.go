@@ -9,10 +9,13 @@ import (
 	"time"
 )
 
+var attempts int = 3
+
 type Attempt struct {
 	Time           string `json:"time"`
 	SourceAddr     string `json:"source_address"`
-	AttemptedInput string `json:"attempted_input"`
+	AttemptedUsername string `json:"attemptedUsername"`
+	AttemptedPassword string `json:"attemptedPassword"`
 }
 
 func main() {
@@ -61,27 +64,51 @@ func main() {
 }
 
 func handleConnection(conn net.Conn, logChannel chan []byte) {
-	defer func(){
+	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Println(err)
 		}
 	}()
-	if _, err := conn.Write([]byte("\r\nPassword: ")); err != nil {
+
+	if _, err := conn.Write([]byte("CentOS release 5.9 (Final)\nKernel 2.6.18-348.6.1.el5 on an i686\n")); err != nil {
 		log.Println(err)
 		return
 	}
+
 	buffer := make([]byte, 1024)
-	for {
+
+	for i := 0; i < attempts; i++ {
+		if _, err := conn.Write([]byte("\r\nlogin: ")); err != nil {
+			log.Println(err)
+			return
+		}
+
 		nInt, err := conn.Read(buffer)
 		if err != nil {
 			return
 		}
+		attemptedUsername := string(buffer[:nInt])
 
-		attemptedInput := string(buffer[:nInt])
+		if _, err := conn.Write([]byte("\rPassword: ")); err != nil {
+			log.Println(err)
+			return
+		}
+
+		nInt, err = conn.Read(buffer)
+		if err != nil {
+			return
+		}
+		attemptedPassword := string(buffer[:nInt])
+
 		result := time.Now().Format(time.RFC3339)
 		sourceAddr := conn.RemoteAddr().String()
 
-		attackLog := Attempt{Time: result, SourceAddr: sourceAddr, AttemptedInput: attemptedInput}
+		attackLog := Attempt{
+			Time:              result,
+			SourceAddr:        sourceAddr,
+			AttemptedUsername: attemptedUsername,
+			AttemptedPassword: attemptedPassword,
+		}
 
 		jsonData, err := json.Marshal(attackLog)
 		if err != nil {
@@ -92,9 +119,13 @@ func handleConnection(conn net.Conn, logChannel chan []byte) {
 		jsonData = append(jsonData, '\n')
 		logChannel <- jsonData
 
-		if _, err := conn.Write([]byte("\r\nPassword incorrect\r\nPassword: ")); err != nil{
+		if _, err := conn.Write([]byte("\r\nLogin incorrect\r\n")); err != nil {
 			log.Println(err)
-		return
+			return
 		}
 	}
+	if _, err := conn.Write([]byte("\r\nMaximum number of tries exceeded (3)\r\n")); err != nil {
+    	    log.Println(err)
+	}
+	return
 }
